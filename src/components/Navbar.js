@@ -11,47 +11,58 @@ const Navbar = () => {
     };
 
     return (
-        <nav>
-            <ul>
-                <li>
-                    <Link to="/">Home</Link>
-                </li>
-                {currentUser && (
-                    <>
-                        <li>
-                            <Link to="/profile">Profile</Link>
+        <nav className="navbar navbar-expand-lg navbar-light bg-light">
+            <div className="container-fluid">
+                <Link className="navbar-brand" to="/">E-Learning</Link>
+                <button className="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span className="navbar-toggler-icon"></span>
+                </button>
+                <div className="collapse navbar-collapse" id="navbarNav">
+                    <ul className="navbar-nav">
+                        <li className="nav-item">
+                            <Link className="nav-link" to="/">Home</Link>
                         </li>
-                        <li>
-                            <Link to="/courses">Courses</Link>
-                        </li>
-                        <li>
-                            <Link to="/modules">Modules</Link>
-                        </li>
-                        <li>
-                            <Link to="/quizzes">Quizzes</Link>
-                        </li>
-                        <li>
-                            <Link to="/forum">Forum</Link>
-                        </li>
-                        <li>
-                            <Link to="/progress">Progress</Link>
-                        </li>
-                        <li>
-                            <button onClick={handleLogout}>Logout</button>
-                        </li>
-                    </>
-                )}
-                {!currentUser && (
-                    <>
-                        <li>
-                            <Link to="/login">Login</Link>
-                        </li>
-                        <li>
-                            <Link to="/register">Register</Link>
-                        </li>
-                    </>
-                )}
-            </ul>
+                        {currentUser && (
+                            <>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/profile">Profile</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/courses">Courses</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/modules">Modules</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/quizzes">Quizzes</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/forum">Forum</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/progress">Progress</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/Certificates">Certificates</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <button className="btn btn-link nav-link" onClick={handleLogout}>Logout</button>
+                                </li>
+                            </>
+                        )}
+                        {!currentUser && (
+                            <>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/login">Login</Link>
+                                </li>
+                                <li className="nav-item">
+                                    <Link className="nav-link" to="/register">Register</Link>
+                                </li>
+                            </>
+                        )}
+                    </ul>
+                </div>
+            </div>
         </nav>
     );
 };

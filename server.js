@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 
 const app = express();
 const port = 5001;
@@ -248,6 +249,44 @@ const forumRouter = require('./forumRoutes')(authenticateToken);
 // Use the progress router and forum router
 app.use('/api', progressRouter);
 app.use('/api', forumRouter);
+const certificatesDir = path.join(__dirname, 'certificates');
+if (!fs.existsSync(certificatesDir)) {
+    fs.mkdirSync(certificatesDir);
+}
+
+// Endpoint to generate certificates
+app.post('/api/certificates', authenticateToken, (req, res) => {
+    const { courseId } = req.body;
+    const course = courses.find(c => c.id === courseId);
+    if (!course) {
+        return res.status(404).json({ message: 'Course not found' });
+    }
+
+    const certificateContent = `
+        Certificate of Completion
+        This is to certify that ${req.user.username} has successfully completed the course ${course.title}.
+    `;
+
+    const filePath = path.join(certificatesDir, `${req.user.username}-${course.title}.txt`);
+    fs.writeFile(filePath, certificateContent, (err) => {
+        if (err) {
+            return res.status(500).json({ message: 'Error generating certificate' });
+        }
+
+        res.download(filePath, (err) => {
+            if (err) {
+                return res.status(500).json({ message: 'Error downloading certificate' });
+            }
+
+            // Remove the certificate file after download
+            fs.unlink(filePath, (err) => {
+                if (err) {
+                    console.error('Error deleting certificate file:', err);
+                }
+            });
+        });
+    });
+});
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

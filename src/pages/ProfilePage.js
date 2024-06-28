@@ -33,44 +33,48 @@ const ProfilePage = () => {
     };
 
     return (
-        <div>
-            <h1>Profile Page</h1>
+        <div className="container mt-5">
+            <h1 className="display-4">Profile Page</h1>
+            {error && <div className="alert alert-danger">{error}</div>}
+            {success && <div className="alert alert-success">{success}</div>}
             <form onSubmit={handleUpdateProfile}>
-                <div>
-                    <label>Username:</label>
+                <div className="mb-3">
+                    <label className="form-label">Username:</label>
                     <input
                         type="text"
+                        className="form-control"
                         value={username}
                         onChange={(e) => setUsername(e.target.value)}
                     />
                 </div>
-                <div>
-                    <label>Email:</label>
+                <div className="mb-3">
+                    <label className="form-label">Email:</label>
                     <input
                         type="email"
+                        className="form-control"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
                     />
                 </div>
-                <div>
-                    <label>Profile Picture:</label>
+                <div className="mb-3">
+                    <label className="form-label">Profile Picture:</label>
                     <input
                         type="file"
+                        className="form-control"
                         onChange={(e) => setProfilePicture(e.target.files[0])}
                     />
                 </div>
-                <div>
-                    <label>New Password:</label>
+                <div className="mb-3">
+                    <label className="form-label">New Password:</label>
                     <input
                         type="password"
+                        className="form-control"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                     />
                 </div>
-                <button type="submit">Update Profile</button>
+                <button type="submit" className="btn btn-primary">Update Profile</button>
             </form>
-            {error && <p>{error}</p>}
-            {success && <p>{success}</p>}
         </div>
     );
 };
