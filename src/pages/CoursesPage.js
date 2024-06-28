@@ -14,6 +14,7 @@ const CoursesPage = () => {
     const fetchCourses = async () => {
       try {
         const response = await axios.get('/api/courses', { headers: authService.authHeader() });
+        console.log('Fetched courses:', response.data);  // Logowanie kursów
         setCourses(response.data);
       } catch (error) {
         setError('Error fetching courses');
@@ -80,6 +81,9 @@ const CoursesPage = () => {
     setEditingTitle('');
   };
 
+  const currentUser = authService.getCurrentUser();
+  console.log('Current user:', currentUser);  // Logowanie aktualnego użytkownika
+
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
 
@@ -87,17 +91,20 @@ const CoursesPage = () => {
       <div>
         <h1>Courses</h1>
         <ul>
-          {courses.map((course) => (
-              <li key={course.id}>
-                {course.title}
-                {course.owner === authService.getCurrentUser().username && (
-                    <>
-                      <button onClick={() => startEditing(course)}>Edit</button>
-                      <button onClick={() => handleDeleteCourse(course.id)}>Delete</button>
-                    </>
-                )}
-              </li>
-          ))}
+          {courses.map((course) => {
+            console.log('Course:', course.title, 'Owner:', course.owner);  // Logowanie kursów i ich właścicieli
+            return (
+                <li key={course.id}>
+                  {course.title}
+                  {course.owner === currentUser?.username && (
+                      <>
+                        <button onClick={() => startEditing(course)}>Edit</button>
+                        <button onClick={() => handleDeleteCourse(course.id)}>Delete</button>
+                      </>
+                  )}
+                </li>
+            );
+          })}
         </ul>
         <div>
           <input
