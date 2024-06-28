@@ -1,80 +1,90 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import React, { useState } from 'react';
 import authService from '../services/authService';
+import axios from 'axios';
 
 const ProfilePage = () => {
     const currentUser = authService.getCurrentUser();
     const [username, setUsername] = useState(currentUser?.username || '');
     const [email, setEmail] = useState(currentUser?.email || '');
     const [profilePicture, setProfilePicture] = useState(null);
-    const [error, setError] = useState(null);
-    const [message, setMessage] = useState(null);
+    const [newPassword, setNewPassword] = useState('');
+    const [message, setMessage] = useState('');
 
-    useEffect(() => {
-        if (currentUser) {
-            setUsername(currentUser.username);
-            setEmail(currentUser.email || '');
-        }
-    }, [currentUser]);
-
-    const handleUpdateProfile = async (e) => {
-        e.preventDefault();
+    const handleUpdateProfile = async () => {
         const formData = new FormData();
         formData.append('username', username);
         formData.append('email', email);
         if (profilePicture) {
             formData.append('profilePicture', profilePicture);
         }
-
         try {
             const response = await axios.put('/api/profile', formData, {
                 headers: {
                     ...authService.authHeader(),
-                    'Content-Type': 'multipart/form-data'
-                }
+                    'Content-Type': 'multipart/form-data',
+                },
             });
             setMessage('Profile updated successfully');
-            authService.setCurrentUser(response.data);
+            authService.logout();
+            window.location.href = '/login';
         } catch (error) {
-            setError('Error updating profile');
+            setMessage('Error updating profile');
         }
     };
 
-    const handleFileChange = (e) => {
-        setProfilePicture(e.target.files[0]);
+    const handleUpdateUser = async () => {
+        try {
+            const response = await axios.put(`/api/users/${currentUser.username}`, {
+                newUsername: username,
+                newPassword: newPassword,
+            }, {
+                headers: authService.authHeader(),
+            });
+            setMessage('User updated successfully');
+            authService.logout();
+            window.location.href = '/login';
+        } catch (error) {
+            setMessage('Error updating user');
+        }
     };
 
     return (
         <div>
             <h1>Profile Page</h1>
-            {error && <p style={{ color: 'red' }}>{error}</p>}
-            {message && <p style={{ color: 'green' }}>{message}</p>}
-            <form onSubmit={handleUpdateProfile}>
-                <div>
-                    <label>Username:</label>
-                    <input
-                        type="text"
-                        value={username}
-                        onChange={(e) => setUsername(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <label>Email:</label>
-                    <input
-                        type="email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                    />
-                </div>
-                <div>
-                    <label>Profile Picture:</label>
-                    <input
-                        type="file"
-                        onChange={handleFileChange}
-                    />
-                </div>
-                <button type="submit">Update Profile</button>
-            </form>
+            {message && <p>{message}</p>}
+            <div>
+                <label>Username:</label>
+                <input
+                    type="text"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                />
+            </div>
+            <div>
+                <label>Email:</label>
+                <input
+                    type="text"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                />
+            </div>
+            <div>
+                <label>Profile Picture:</label>
+                <input
+                    type="file"
+                    onChange={(e) => setProfilePicture(e.target.files[0])}
+                />
+            </div>
+            <div>
+                <label>New Password:</label>
+                <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                />
+            </div>
+            <button onClick={handleUpdateProfile}>Update Profile</button>
+            <button onClick={handleUpdateUser}>Update User</button>
         </div>
     );
 };

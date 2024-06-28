@@ -218,6 +218,20 @@ app.put('/api/profile', authenticateToken, upload.single('profilePicture'), (req
         res.status(404).json({ message: 'User not found' });
     }
 });
+app.put('/api/users/:username', authenticateToken, async (req, res) => {
+    const { username } = req.params;
+    const { newUsername, newPassword } = req.body;
+    const user = users.find(u => u.username === username);
+    if (user) {
+        user.username = newUsername || user.username;
+        if (newPassword) {
+            user.password = await bcrypt.hash(newPassword, 10);
+        }
+        res.status(200).json(user);
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+});
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
