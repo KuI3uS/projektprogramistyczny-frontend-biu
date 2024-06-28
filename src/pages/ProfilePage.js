@@ -1,42 +1,41 @@
 import React, { useState } from 'react';
 import authService from '../services/authService';
-import apiService from '../services/apiService';
 
 const ProfilePage = () => {
     const currentUser = authService.getCurrentUser();
     const [username, setUsername] = useState(currentUser ? currentUser.username : '');
     const [email, setEmail] = useState(currentUser ? currentUser.email : '');
-    const [profilePicture, setProfilePicture] = useState(null);
     const [newPassword, setNewPassword] = useState('');
-    const [message, setMessage] = useState('');
+    const [profilePicture, setProfilePicture] = useState(null);
+    const [error, setError] = useState(null);
+    const [success, setSuccess] = useState(null);
 
-    const handleProfileUpdate = async (e) => {
+    const handleUpdateProfile = async (e) => {
         e.preventDefault();
         const formData = new FormData();
         formData.append('username', username);
         formData.append('email', email);
+        formData.append('newPassword', newPassword);
         if (profilePicture) {
             formData.append('profilePicture', profilePicture);
         }
-        if (newPassword) {
-            formData.append('newPassword', newPassword);
-        }
 
         try {
-            await apiService.updateUser(currentUser.username, formData);
-            setMessage('Profile updated successfully');
-            authService.logout();
-            window.location.href = '/login';
+            const response = await authService.updateProfile(formData);
+            setSuccess(response.data.message);
+            if (response.data.logout) {
+                authService.logout();
+                window.location.href = '/login';
+            }
         } catch (error) {
-            console.error('Error updating profile', error);
-            setMessage('Error updating profile');
+            setError('Error updating profile');
         }
     };
 
     return (
         <div>
             <h1>Profile Page</h1>
-            <form onSubmit={handleProfileUpdate}>
+            <form onSubmit={handleUpdateProfile}>
                 <div>
                     <label>Username:</label>
                     <input
@@ -70,7 +69,8 @@ const ProfilePage = () => {
                 </div>
                 <button type="submit">Update Profile</button>
             </form>
-            {message && <p>{message}</p>}
+            {error && <p>{error}</p>}
+            {success && <p>{success}</p>}
         </div>
     );
 };

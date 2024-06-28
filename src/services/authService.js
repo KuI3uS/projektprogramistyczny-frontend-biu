@@ -40,12 +40,17 @@ const authHeader = () => {
     }
 };
 
+const updateProfile = (formData) => {
+    return axios.put(API_URL + 'profile', formData, { headers: authHeader() });
+};
+
 const authService = {
     register,
     login,
     logout,
     getCurrentUser,
     authHeader,
+    updateProfile,
 };
 
 export default authService;

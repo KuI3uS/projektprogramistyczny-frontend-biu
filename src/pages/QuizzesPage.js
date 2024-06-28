@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
 import authService from '../services/authService';
 
@@ -6,10 +6,14 @@ const QuizzesPage = () => {
     const [quizzes, setQuizzes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [newQuiz, setNewQuiz] = useState('');
+    const [newQuizTitle, setNewQuizTitle] = useState('');
+    const [newQuestion, setNewQuestion] = useState({ text: '', options: ['', '', '', ''], correctOption: '' });
     const [editingQuiz, setEditingQuiz] = useState(null);
     const [editingTitle, setEditingTitle] = useState('');
-    const [questions, setQuestions] = useState([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
+    const [editingQuestions, setEditingQuestions] = useState([]);
+    const [solvingQuiz, setSolvingQuiz] = useState(null);
+    const [answers, setAnswers] = useState({});
+    const [score, setScore] = useState(null);
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -18,117 +22,166 @@ const QuizzesPage = () => {
                 setQuizzes(response.data);
             } catch (error) {
                 setError('Error fetching quizzes');
-                console.error('Error fetching quizzes:', error);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchQuizzes();
     }, []);
 
-    const handleAddQuiz = async () => {
-        if (!newQuiz.trim() || questions.some(q => !q.text || q.options.some(opt => !opt))) {
-            setError('Quiz title and all questions must be filled');
+    const handleAddQuiz = useCallback(async () => {
+        if (!newQuizTitle.trim()) {
+            setError('Quiz title cannot be empty');
             return;
         }
+        const questions = [
+            { ...newQuestion, id: Date.now() }
+        ];
         try {
-            const response = await axios.post('/api/quizzes', { title: newQuiz, questions }, { headers: authService.authHeader() });
+            const response = await axios.post('/api/quizzes', { title: newQuizTitle, questions }, { headers: authService.authHeader() });
             setQuizzes([...quizzes, response.data]);
-            setNewQuiz('');
-            setQuestions([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
+            setNewQuizTitle('');
+            setNewQuestion({ text: '', options: ['', '', '', ''], correctOption: '' });
         } catch (error) {
             setError('Error adding quiz');
-            console.error('Error adding quiz:', error);
         }
-    };
+    }, [newQuizTitle, newQuestion, quizzes]);
 
-    const handleEditQuiz = async () => {
-        if (!editingTitle.trim() || questions.some(q => !q.text || q.options.some(opt => !opt))) {
-            setError('Quiz title and all questions must be filled');
+    const handleEditQuiz = useCallback(async () => {
+        if (!editingTitle.trim()) {
+            setError('Quiz title cannot be empty');
             return;
         }
         try {
-            const response = await axios.put(`/api/quizzes/${editingQuiz.id}`, { title: editingTitle, questions }, { headers: authService.authHeader() });
+            const response = await axios.put(`/api/quizzes/${editingQuiz.id}`, { title: editingTitle, questions: editingQuestions }, { headers: authService.authHeader() });
             const updatedQuizzes = quizzes.map((quiz) =>
                 quiz.id === editingQuiz.id ? response.data : quiz
             );
             setQuizzes(updatedQuizzes);
             setEditingQuiz(null);
             setEditingTitle('');
-            setQuestions([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
+            setEditingQuestions([]);
         } catch (error) {
             setError('Error editing quiz');
-            console.error('Error editing quiz:', error);
         }
-    };
+    }, [editingQuiz, editingTitle, editingQuestions, quizzes]);
 
-    const handleDeleteQuiz = async (id) => {
+    const handleDeleteQuiz = useCallback(async (id) => {
         try {
             await axios.delete(`/api/quizzes/${id}`, { headers: authService.authHeader() });
             setQuizzes(quizzes.filter((quiz) => quiz.id !== id));
         } catch (error) {
             setError('Error deleting quiz');
-            console.error('Error deleting quiz:', error);
+        }
+    }, [quizzes]);
+
+    const startEditing = useCallback((quiz) => {
+        setEditingQuiz(quiz);
+        setEditingTitle(quiz.title);
+        setEditingQuestions(quiz.questions);
+    }, []);
+
+    const startSolving = useCallback((quiz) => {
+        setSolvingQuiz(quiz);
+        setAnswers({});
+        setScore(null);
+    }, []);
+
+    const handleQuestionChange = (index, field, value) => {
+        const updatedQuestions = [...editingQuestions];
+        updatedQuestions[index][field] = value;
+        setEditingQuestions(updatedQuestions);
+    };
+
+    const addNewQuestion = () => {
+        setEditingQuestions([...editingQuestions, { text: '', options: ['', '', '', ''], correctOption: '' }]);
+    };
+
+    const handleSubmitAnswers = async () => {
+        let score = 0;
+        solvingQuiz.questions.forEach((question, index) => {
+            if (answers[index] === question.correctOption) {
+                score += 1;
+            }
+        });
+        setScore(score);
+
+        try {
+            await axios.post('/api/quiz-results', { quizId: solvingQuiz.id, score }, { headers: authService.authHeader() });
+        } catch (error) {
+            console.error('Error submitting quiz results', error);
         }
     };
 
-    const startEditing = (quiz) => {
-        setEditingQuiz(quiz);
-        setEditingTitle(quiz.title);
-        setQuestions(quiz.questions);
-    };
-
-    const cancelEditing = () => {
-        setEditingQuiz(null);
-        setEditingTitle('');
-        setQuestions([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
-    };
-
-    const handleQuestionChange = (index, field, value) => {
-        const updatedQuestions = [...questions];
-        updatedQuestions[index][field] = value;
-        setQuestions(updatedQuestions);
-    };
-
-    const handleOptionChange = (qIndex, optIndex, value) => {
-        const updatedQuestions = [...questions];
-        updatedQuestions[qIndex].options[optIndex] = value;
-        setQuestions(updatedQuestions);
-    };
-
-    const addQuestion = () => {
-        setQuestions([...questions, { text: '', options: ['', '', '', ''], correctOption: '' }]);
-    };
-
-    const removeQuestion = (index) => {
-        const updatedQuestions = questions.filter((q, i) => i !== index);
-        setQuestions(updatedQuestions);
-    };
+    const currentUser = authService.getCurrentUser();
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p>{error}</p>;
 
     return (
-        <div className="container">
+        <div>
             <h1>Quizzes</h1>
             <ul>
                 {quizzes.map((quiz) => (
                     <li key={quiz.id}>
                         {quiz.title}
-                        <button onClick={() => startEditing(quiz)}>Edit</button>
-                        <button onClick={() => handleDeleteQuiz(quiz.id)}>Delete</button>
+                        {quiz.owner === currentUser?.username && (
+                            <>
+                                <button onClick={() => startEditing(quiz)}>Edit</button>
+                                <button onClick={() => handleDeleteQuiz(quiz.id)}>Delete</button>
+                            </>
+                        )}
+                        <button onClick={() => startSolving(quiz)}>Solve</button>
                     </li>
                 ))}
             </ul>
             <div>
                 <input
                     type="text"
-                    value={newQuiz}
-                    onChange={(e) => setNewQuiz(e.target.value)}
-                    placeholder="New Quiz"
+                    value={newQuizTitle}
+                    onChange={(e) => setNewQuizTitle(e.target.value)}
+                    placeholder="New Quiz Title"
                 />
                 <button onClick={handleAddQuiz}>Add New Quiz</button>
+                <div>
+                    <h3>Questions</h3>
+                    <input
+                        type="text"
+                        value={newQuestion.text}
+                        onChange={(e) => setNewQuestion({ ...newQuestion, text: e.target.value })}
+                        placeholder="Question Text"
+                    />
+                    <div>
+                        {newQuestion.options.map((option, index) => (
+                            <div key={index}>
+                                <input
+                                    type="text"
+                                    value={option}
+                                    onChange={(e) => {
+                                        const updatedOptions = [...newQuestion.options];
+                                        updatedOptions[index] = e.target.value;
+                                        setNewQuestion({ ...newQuestion, options: updatedOptions });
+                                    }}
+                                    placeholder={`Option ${String.fromCharCode(65 + index)}`}
+                                />
+                            </div>
+                        ))}
+                    </div>
+                    <div>
+                        <label>Correct Option:</label>
+                        <select
+                            value={newQuestion.correctOption}
+                            onChange={(e) => setNewQuestion({ ...newQuestion, correctOption: e.target.value })}
+                        >
+                            <option value="">Select Correct Option</option>
+                            {newQuestion.options.map((option, index) => (
+                                <option key={index} value={String.fromCharCode(65 + index)}>
+                                    {String.fromCharCode(65 + index)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
             </div>
             {editingQuiz && (
                 <div>
@@ -137,45 +190,83 @@ const QuizzesPage = () => {
                         type="text"
                         value={editingTitle}
                         onChange={(e) => setEditingTitle(e.target.value)}
-                        placeholder="Quiz Title"
+                        placeholder="Edit Quiz Title"
                     />
-                    <h3>Questions</h3>
-                    {questions.map((question, qIndex) => (
-                        <div key={qIndex}>
-                            <input
-                                type="text"
-                                value={question.text}
-                                onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
-                                placeholder="Question Text"
-                            />
-                            <div>
-                                {question.options.map((option, optIndex) => (
-                                    <input
-                                        key={optIndex}
-                                        type="text"
-                                        value={option}
-                                        onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
-                                        placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
-                                    />
-                                ))}
+                    <div>
+                        <h3>Questions</h3>
+                        {editingQuestions.map((question, index) => (
+                            <div key={index}>
+                                <input
+                                    type="text"
+                                    value={question.text}
+                                    onChange={(e) => handleQuestionChange(index, 'text', e.target.value)}
+                                    placeholder="Question Text"
+                                />
+                                <div>
+                                    {question.options.map((option, optionIndex) => (
+                                        <div key={optionIndex}>
+                                            <input
+                                                type="text"
+                                                value={option}
+                                                onChange={(e) => {
+                                                    const updatedOptions = [...question.options];
+                                                    updatedOptions[optionIndex] = e.target.value;
+                                                    handleQuestionChange(index, 'options', updatedOptions);
+                                                }}
+                                                placeholder={`Option ${String.fromCharCode(65 + optionIndex)}`}
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                                <div>
+                                    <label>Correct Option:</label>
+                                    <select
+                                        value={question.correctOption}
+                                        onChange={(e) => handleQuestionChange(index, 'correctOption', e.target.value)}
+                                    >
+                                        <option value="">Select Correct Option</option>
+                                        {question.options.map((option, optionIndex) => (
+                                            <option key={optionIndex} value={String.fromCharCode(65 + optionIndex)}>
+                                                {String.fromCharCode(65 + optionIndex)}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
                             </div>
-                            <select
-                                value={question.correctOption}
-                                onChange={(e) => handleQuestionChange(qIndex, 'correctOption', e.target.value)}
-                            >
-                                <option value="">Select Correct Option</option>
-                                {question.options.map((option, optIndex) => (
-                                    <option key={optIndex} value={String.fromCharCode(65 + optIndex)}>
-                                        {String.fromCharCode(65 + optIndex)}
-                                    </option>
-                                ))}
-                            </select>
-                            <button onClick={() => removeQuestion(qIndex)}>Remove Question</button>
-                        </div>
-                    ))}
-                    <button onClick={addQuestion}>Add Question</button>
-                    <button onClick={handleEditQuiz}>Save Quiz</button>
-                    <button onClick={cancelEditing}>Cancel</button>
+                        ))}
+                        <button onClick={addNewQuestion}>Add Question</button>
+                    </div>
+                    <button onClick={handleEditQuiz}>Save</button>
+                    <button onClick={() => setEditingQuiz(null)}>Cancel</button>
+                </div>
+            )}
+            {solvingQuiz && (
+                <div>
+                    <h2>Solve Quiz: {solvingQuiz.title}</h2>
+                    <div>
+                        {solvingQuiz.questions.map((question, index) => (
+                            <div key={index}>
+                                <p>{question.text}</p>
+                                <div>
+                                    {question.options.map((option, optionIndex) => (
+                                        <label key={optionIndex}>
+                                            <input
+                                                type="radio"
+                                                name={`question-${index}`}
+                                                value={String.fromCharCode(65 + optionIndex)}
+                                                onChange={(e) => setAnswers({ ...answers, [index]: e.target.value })}
+                                            />
+                                            {option}
+                                        </label>
+                                    ))}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <button onClick={handleSubmitAnswers}>Submit Answers</button>
+                    {score !== null && (
+                        <p>Your score: {score}/{solvingQuiz.questions.length}</p>
+                    )}
                 </div>
             )}
         </div>

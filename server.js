@@ -42,7 +42,7 @@ let quizzes = [
         owner: 'user2'
     },
 ];
-let forumPosts = [];
+
 let userProgress = [];
 
 const storage = multer.diskStorage({
@@ -206,8 +206,9 @@ app.delete('/api/quizzes/:id', authenticateToken, (req, res) => {
     }
 });
 
-app.put('/api/profile', authenticateToken, upload.single('profilePicture'), (req, res) => {
-    const { username, email } = req.body;
+// Endpoint to submit quiz results
+app.put('/api/profile', authenticateToken, upload.single('profilePicture'), async (req, res) => {
+    const { username, email, newPassword } = req.body;
     const user = users.find(u => u.username === req.user.username);
     if (user) {
         user.username = username || user.username;
@@ -215,11 +216,16 @@ app.put('/api/profile', authenticateToken, upload.single('profilePicture'), (req
         if (req.file) {
             user.profilePicture = req.file.path;
         }
-        res.status(200).json(user);
+        if (newPassword) {
+            user.password = await bcrypt.hash(newPassword, 10);
+            return res.status(200).json({ message: 'Profile updated successfully, please log in again', logout: true });
+        }
+        res.status(200).json({ message: 'Profile updated successfully' });
     } else {
         res.status(404).json({ message: 'User not found' });
     }
 });
+
 app.put('/api/users/:username', authenticateToken, async (req, res) => {
     const { username } = req.params;
     const { newUsername, newPassword } = req.body;

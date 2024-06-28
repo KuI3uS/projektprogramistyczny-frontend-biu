@@ -10,11 +10,11 @@ module.exports = (authenticateToken) => {
     });
 
     router.post('/progress', authenticateToken, (req, res) => {
-        const { courseId, moduleId, progress } = req.body;
-        if (!courseId || !moduleId || progress === undefined) {
-            return res.status(400).json({ message: 'Course ID, Module ID, and progress are required' });
+        const { quizId, score } = req.body;
+        if (!quizId || score === undefined) {
+            return res.status(400).json({ message: 'Quiz ID and score are required' });
         }
-        userProgress.push({ username: req.user.username, courseId, moduleId, progress });
+        userProgress.push({ username: req.user.username, quizId, score });
         res.status(201).json({ message: 'Progress saved successfully' });
     });
 

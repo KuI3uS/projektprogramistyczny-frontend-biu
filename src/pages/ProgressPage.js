@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import authService from '../services/authService';
@@ -14,12 +15,10 @@ const ProgressPage = () => {
                 setProgress(response.data);
             } catch (error) {
                 setError('Error fetching progress');
-                console.error('Error fetching progress:', error);
             } finally {
                 setLoading(false);
             }
         };
-
         fetchProgress();
     }, []);
 
@@ -27,15 +26,15 @@ const ProgressPage = () => {
     if (error) return <p>{error}</p>;
 
     return (
-        <div className="container">
+        <div>
             <h1>Progress</h1>
-            {progress.map((entry) => (
-                <div key={`${entry.courseId}-${entry.moduleId}`} className="card">
-                    <h3>Course: {entry.courseId}</h3>
-                    <p>Module: {entry.moduleId}</p>
-                    <p>Progress: {entry.progress}%</p>
-                </div>
-            ))}
+            <ul>
+                {progress.map((entry, index) => (
+                    <li key={index}>
+                        Quiz ID: {entry.quizId}, Score: {entry.score}
+                    </li>
+                ))}
+            </ul>
         </div>
     );
 };
