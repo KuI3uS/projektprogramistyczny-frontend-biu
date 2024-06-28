@@ -42,6 +42,8 @@ let quizzes = [
         owner: 'user2'
     },
 ];
+let forumPosts = [];
+let userProgress = [];
 
 const storage = multer.diskStorage({
     destination: function (req, file, cb) {
@@ -232,6 +234,14 @@ app.put('/api/users/:username', authenticateToken, async (req, res) => {
         res.status(404).json({ message: 'User not found' });
     }
 });
+
+// Import the progress router and forum router
+const progressRouter = require('./progressRoutes')(authenticateToken);
+const forumRouter = require('./forumRoutes')(authenticateToken);
+
+// Use the progress router and forum router
+app.use('/api', progressRouter);
+app.use('/api', forumRouter);
 
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);

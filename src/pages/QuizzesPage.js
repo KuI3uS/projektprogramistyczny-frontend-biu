@@ -6,13 +6,10 @@ const QuizzesPage = () => {
     const [quizzes, setQuizzes] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
-    const [selectedOptions, setSelectedOptions] = useState({});
-    const [showResults, setShowResults] = useState(false);
-    const [newQuizTitle, setNewQuizTitle] = useState('');
-    const [newQuestionText, setNewQuestionText] = useState('');
-    const [newQuestionOptions, setNewQuestionOptions] = useState({ A: '', B: '', C: '', D: '' });
-    const [newQuestionCorrectOption, setNewQuestionCorrectOption] = useState('');
+    const [newQuiz, setNewQuiz] = useState('');
     const [editingQuiz, setEditingQuiz] = useState(null);
+    const [editingTitle, setEditingTitle] = useState('');
+    const [questions, setQuestions] = useState([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
 
     useEffect(() => {
         const fetchQuizzes = async () => {
@@ -21,6 +18,7 @@ const QuizzesPage = () => {
                 setQuizzes(response.data);
             } catch (error) {
                 setError('Error fetching quizzes');
+                console.error('Error fetching quizzes:', error);
             } finally {
                 setLoading(false);
             }
@@ -29,179 +27,157 @@ const QuizzesPage = () => {
         fetchQuizzes();
     }, []);
 
-    const handleOptionChange = (quizId, questionId, option) => {
-        setSelectedOptions({
-            ...selectedOptions,
-            [quizId]: {
-                ...selectedOptions[quizId],
-                [questionId]: option
-            }
-        });
-    };
-
-    const handleSubmit = () => {
-        setShowResults(true);
-    };
-
-    const getResult = (quiz, questionId, option) => {
-        const question = quiz.questions.find(q => q.id === questionId);
-        return question.correctOption === option ? ' (correct answer)' : ' (incorrect answer)';
-    };
-
     const handleAddQuiz = async () => {
-        if (!newQuizTitle.trim()) {
-            setError('Quiz title cannot be empty');
+        if (!newQuiz.trim() || questions.some(q => !q.text || q.options.some(opt => !opt))) {
+            setError('Quiz title and all questions must be filled');
             return;
         }
         try {
-            const response = await axios.post('/api/quizzes', { title: newQuizTitle, questions: [] }, { headers: authService.authHeader() });
+            const response = await axios.post('/api/quizzes', { title: newQuiz, questions }, { headers: authService.authHeader() });
             setQuizzes([...quizzes, response.data]);
-            setNewQuizTitle('');
+            setNewQuiz('');
+            setQuestions([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
         } catch (error) {
             setError('Error adding quiz');
+            console.error('Error adding quiz:', error);
         }
     };
 
-    const handleAddQuestion = async (quizId) => {
-        if (!newQuestionText.trim() || !newQuestionCorrectOption.trim()) {
-            setError('Question text and correct option cannot be empty');
+    const handleEditQuiz = async () => {
+        if (!editingTitle.trim() || questions.some(q => !q.text || q.options.some(opt => !opt))) {
+            setError('Quiz title and all questions must be filled');
             return;
         }
         try {
-            const quiz = quizzes.find(q => q.id === quizId);
-            const newQuestion = {
-                id: quiz.questions.length + 1,
-                text: newQuestionText,
-                options: Object.values(newQuestionOptions),
-                correctOption: newQuestionCorrectOption
-            };
-            const updatedQuiz = { ...quiz, questions: [...quiz.questions, newQuestion] };
-            await axios.put(`/api/quizzes/${quizId}`, updatedQuiz, { headers: authService.authHeader() });
-            setQuizzes(quizzes.map(q => q.id === quizId ? updatedQuiz : q));
-            setNewQuestionText('');
-            setNewQuestionOptions({ A: '', B: '', C: '', D: '' });
-            setNewQuestionCorrectOption('');
+            const response = await axios.put(`/api/quizzes/${editingQuiz.id}`, { title: editingTitle, questions }, { headers: authService.authHeader() });
+            const updatedQuizzes = quizzes.map((quiz) =>
+                quiz.id === editingQuiz.id ? response.data : quiz
+            );
+            setQuizzes(updatedQuizzes);
+            setEditingQuiz(null);
+            setEditingTitle('');
+            setQuestions([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
         } catch (error) {
-            setError('Error adding question');
+            setError('Error editing quiz');
+            console.error('Error editing quiz:', error);
         }
     };
 
-    const handleDeleteQuiz = async (quizId) => {
+    const handleDeleteQuiz = async (id) => {
         try {
-            await axios.delete(`/api/quizzes/${quizId}`, { headers: authService.authHeader() });
-            setQuizzes(quizzes.filter((quiz) => quiz.id !== quizId));
+            await axios.delete(`/api/quizzes/${id}`, { headers: authService.authHeader() });
+            setQuizzes(quizzes.filter((quiz) => quiz.id !== id));
         } catch (error) {
             setError('Error deleting quiz');
+            console.error('Error deleting quiz:', error);
         }
     };
 
     const startEditing = (quiz) => {
         setEditingQuiz(quiz);
-        setNewQuizTitle(quiz.title);
-    };
-
-    const handleEditQuiz = async () => {
-        if (!newQuizTitle.trim()) {
-            setError('Quiz title cannot be empty');
-            return;
-        }
-        try {
-            const updatedQuiz = { ...editingQuiz, title: newQuizTitle };
-            await axios.put(`/api/quizzes/${editingQuiz.id}`, updatedQuiz, { headers: authService.authHeader() });
-            setQuizzes(quizzes.map(q => q.id === editingQuiz.id ? updatedQuiz : q));
-            setEditingQuiz(null);
-            setNewQuizTitle('');
-        } catch (error) {
-            setError('Error editing quiz');
-        }
+        setEditingTitle(quiz.title);
+        setQuestions(quiz.questions);
     };
 
     const cancelEditing = () => {
         setEditingQuiz(null);
-        setNewQuizTitle('');
+        setEditingTitle('');
+        setQuestions([{ text: '', options: ['', '', '', ''], correctOption: '' }]);
+    };
+
+    const handleQuestionChange = (index, field, value) => {
+        const updatedQuestions = [...questions];
+        updatedQuestions[index][field] = value;
+        setQuestions(updatedQuestions);
+    };
+
+    const handleOptionChange = (qIndex, optIndex, value) => {
+        const updatedQuestions = [...questions];
+        updatedQuestions[qIndex].options[optIndex] = value;
+        setQuestions(updatedQuestions);
+    };
+
+    const addQuestion = () => {
+        setQuestions([...questions, { text: '', options: ['', '', '', ''], correctOption: '' }]);
+    };
+
+    const removeQuestion = (index) => {
+        const updatedQuestions = questions.filter((q, i) => i !== index);
+        setQuestions(updatedQuestions);
     };
 
     if (loading) return <p>Loading...</p>;
     if (error) return <p>{error}</p>;
 
     return (
-        <div>
+        <div className="container">
             <h1>Quizzes</h1>
+            <ul>
+                {quizzes.map((quiz) => (
+                    <li key={quiz.id}>
+                        {quiz.title}
+                        <button onClick={() => startEditing(quiz)}>Edit</button>
+                        <button onClick={() => handleDeleteQuiz(quiz.id)}>Delete</button>
+                    </li>
+                ))}
+            </ul>
             <div>
                 <input
                     type="text"
-                    value={newQuizTitle}
-                    onChange={(e) => setNewQuizTitle(e.target.value)}
-                    placeholder="New Quiz Title"
+                    value={newQuiz}
+                    onChange={(e) => setNewQuiz(e.target.value)}
+                    placeholder="New Quiz"
                 />
-                <button onClick={handleAddQuiz}>Add Quiz</button>
+                <button onClick={handleAddQuiz}>Add New Quiz</button>
             </div>
-            {quizzes.map((quiz) => (
-                <div key={quiz.id}>
-                    <h3>{quiz.title}</h3>
-                    {editingQuiz && editingQuiz.id === quiz.id ? (
-                        <div>
+            {editingQuiz && (
+                <div>
+                    <h2>Edit Quiz</h2>
+                    <input
+                        type="text"
+                        value={editingTitle}
+                        onChange={(e) => setEditingTitle(e.target.value)}
+                        placeholder="Quiz Title"
+                    />
+                    <h3>Questions</h3>
+                    {questions.map((question, qIndex) => (
+                        <div key={qIndex}>
                             <input
                                 type="text"
-                                value={newQuizTitle}
-                                onChange={(e) => setNewQuizTitle(e.target.value)}
-                                placeholder="Edit Quiz Title"
+                                value={question.text}
+                                onChange={(e) => handleQuestionChange(qIndex, 'text', e.target.value)}
+                                placeholder="Question Text"
                             />
-                            <button onClick={handleEditQuiz}>Save</button>
-                            <button onClick={cancelEditing}>Cancel</button>
-                        </div>
-                    ) : (
-                        <>
-                            <button onClick={() => startEditing(quiz)}>Edit</button>
-                            <button onClick={() => handleDeleteQuiz(quiz.id)}>Delete</button>
-                        </>
-                    )}
-                    {quiz.questions.map((question) => (
-                        <div key={question.id}>
-                            <p>{question.text}</p>
-                            {question.options.map((option) => (
-                                <label key={option}>
+                            <div>
+                                {question.options.map((option, optIndex) => (
                                     <input
-                                        type="radio"
+                                        key={optIndex}
+                                        type="text"
                                         value={option}
-                                        checked={selectedOptions[quiz.id]?.[question.id] === option}
-                                        onChange={() => handleOptionChange(quiz.id, question.id, option)}
+                                        onChange={(e) => handleOptionChange(qIndex, optIndex, e.target.value)}
+                                        placeholder={`Option ${String.fromCharCode(65 + optIndex)}`}
                                     />
-                                    {option}
-                                    {showResults && getResult(quiz, question.id, option)}
-                                </label>
-                            ))}
+                                ))}
+                            </div>
+                            <select
+                                value={question.correctOption}
+                                onChange={(e) => handleQuestionChange(qIndex, 'correctOption', e.target.value)}
+                            >
+                                <option value="">Select Correct Option</option>
+                                {question.options.map((option, optIndex) => (
+                                    <option key={optIndex} value={String.fromCharCode(65 + optIndex)}>
+                                        {String.fromCharCode(65 + optIndex)}
+                                    </option>
+                                ))}
+                            </select>
+                            <button onClick={() => removeQuestion(qIndex)}>Remove Question</button>
                         </div>
                     ))}
-                    <div>
-                        <input
-                            type="text"
-                            value={newQuestionText}
-                            onChange={(e) => setNewQuestionText(e.target.value)}
-                            placeholder="New Question Text"
-                        />
-                        <div>
-                            {Object.keys(newQuestionOptions).map(option => (
-                                <input
-                                    key={option}
-                                    type="text"
-                                    value={newQuestionOptions[option]}
-                                    onChange={(e) => setNewQuestionOptions({ ...newQuestionOptions, [option]: e.target.value })}
-                                    placeholder={`Option ${option}`}
-                                />
-                            ))}
-                        </div>
-                        <input
-                            type="text"
-                            value={newQuestionCorrectOption}
-                            onChange={(e) => setNewQuestionCorrectOption(e.target.value)}
-                            placeholder="Correct Option"
-                        />
-                        <button onClick={() => handleAddQuestion(quiz.id)}>Add Question</button>
-                    </div>
+                    <button onClick={addQuestion}>Add Question</button>
+                    <button onClick={handleEditQuiz}>Save Quiz</button>
+                    <button onClick={cancelEditing}>Cancel</button>
                 </div>
-            ))}
-            <button onClick={handleSubmit}>Submit Answers</button>
+            )}
         </div>
     );
 };

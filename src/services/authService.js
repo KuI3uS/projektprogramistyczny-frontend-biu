@@ -31,10 +31,6 @@ const getCurrentUser = () => {
     return JSON.parse(localStorage.getItem('user'));
 };
 
-const setCurrentUser = (user) => {
-    localStorage.setItem('user', JSON.stringify(user));
-};
-
 const authHeader = () => {
     const user = getCurrentUser();
     if (user && user.accessToken) {
@@ -49,7 +45,6 @@ const authService = {
     login,
     logout,
     getCurrentUser,
-    setCurrentUser,
     authHeader,
 };
 

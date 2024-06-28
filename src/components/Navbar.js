@@ -31,6 +31,12 @@ const Navbar = () => {
                             <Link to="/quizzes">Quizzes</Link>
                         </li>
                         <li>
+                            <Link to="/forum">Forum</Link>
+                        </li>
+                        <li>
+                            <Link to="/progress">Progress</Link>
+                        </li>
+                        <li>
                             <button onClick={handleLogout}>Logout</button>
                         </li>
                     </>

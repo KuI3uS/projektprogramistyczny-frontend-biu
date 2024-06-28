@@ -7,7 +7,10 @@ import ProfilePage from './pages/ProfilePage';
 import CoursesPage from './pages/CoursesPage';
 import ModulesPage from './pages/ModulesPage';
 import QuizzesPage from './pages/QuizzesPage';
+import ProgressPage from './pages/ProgressPage';
+import ForumPage from './pages/ForumPage';
 import Navbar from './components/Navbar';
+import './App.css';
 
 const App = () => {
     return (
@@ -22,6 +25,8 @@ const App = () => {
                     <Route path="/courses" element={<CoursesPage />} />
                     <Route path="/modules" element={<ModulesPage />} />
                     <Route path="/quizzes" element={<QuizzesPage />} />
+                    <Route path="/progress" element={<ProgressPage />} />
+                    <Route path="/forum" element={<ForumPage />} />
                 </Routes>
             </div>
         </Router>

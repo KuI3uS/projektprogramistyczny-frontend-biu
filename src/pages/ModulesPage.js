@@ -1,11 +1,10 @@
+
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiService from '../services/apiService';
 import authService from '../services/authService';
 
 const ModulesPage = () => {
     const [modules, setModules] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
     const [newModule, setNewModule] = useState('');
     const [editingModule, setEditingModule] = useState(null);
     const [editingTitle, setEditingTitle] = useState('');
@@ -13,12 +12,10 @@ const ModulesPage = () => {
     useEffect(() => {
         const fetchModules = async () => {
             try {
-                const response = await axios.get('/api/modules', { headers: authService.authHeader() });
+                const response = await apiService.getModules();
                 setModules(response.data);
             } catch (error) {
-                setError('Error fetching modules');
-            } finally {
-                setLoading(false);
+                console.error('Error fetching modules', error);
             }
         };
 
@@ -27,25 +24,23 @@ const ModulesPage = () => {
 
     const handleAddModule = async () => {
         if (!newModule.trim()) {
-            setError('Module title cannot be empty');
             return;
         }
         try {
-            const response = await axios.post('/api/modules', { title: newModule }, { headers: authService.authHeader() });
+            const response = await apiService.createModule(newModule);
             setModules([...modules, response.data]);
             setNewModule('');
         } catch (error) {
-            setError('Error adding module');
+            console.error('Error adding module', error);
         }
     };
 
     const handleEditModule = async () => {
         if (!editingTitle.trim()) {
-            setError('Module title cannot be empty');
             return;
         }
         try {
-            const response = await axios.put(`/api/modules/${editingModule.id}`, { title: editingTitle }, { headers: authService.authHeader() });
+            const response = await apiService.updateModule(editingModule.id, editingTitle);
             const updatedModules = modules.map((module) =>
                 module.id === editingModule.id ? response.data : module
             );
@@ -53,16 +48,16 @@ const ModulesPage = () => {
             setEditingModule(null);
             setEditingTitle('');
         } catch (error) {
-            setError('Error editing module');
+            console.error('Error editing module', error);
         }
     };
 
     const handleDeleteModule = async (id) => {
         try {
-            await axios.delete(`/api/modules/${id}`, { headers: authService.authHeader() });
+            await apiService.deleteModule(id);
             setModules(modules.filter((module) => module.id !== id));
         } catch (error) {
-            setError('Error deleting module');
+            console.error('Error deleting module', error);
         }
     };
 
@@ -77,9 +72,6 @@ const ModulesPage = () => {
     };
 
     const currentUser = authService.getCurrentUser();
-
-    if (loading) return <p>Loading...</p>;
-    if (error) return <p>{error}</p>;
 
     return (
         <div>

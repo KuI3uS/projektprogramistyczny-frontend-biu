@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import apiService from '../services/apiService';
 import authService from '../services/authService';
 
 const CoursesPage = () => {
@@ -13,10 +13,11 @@ const CoursesPage = () => {
   useEffect(() => {
     const fetchCourses = async () => {
       try {
-        const response = await axios.get('/api/courses', { headers: authService.authHeader() });
+        const response = await apiService.getCourses();
         setCourses(response.data);
       } catch (error) {
         setError('Error fetching courses');
+        console.error('Error fetching courses:', error);
       } finally {
         setLoading(false);
       }
@@ -24,18 +25,18 @@ const CoursesPage = () => {
 
     fetchCourses();
   }, []);
-
   const handleAddCourse = async () => {
     if (!newCourse.trim()) {
       setError('Course title cannot be empty');
       return;
     }
     try {
-      const response = await axios.post('/api/courses', { title: newCourse }, { headers: authService.authHeader() });
+      const response = await apiService.createCourse(newCourse);
       setCourses([...courses, response.data]);
       setNewCourse('');
     } catch (error) {
       setError('Error adding course');
+      console.error('Error adding course:', error);
     }
   };
 
@@ -45,7 +46,7 @@ const CoursesPage = () => {
       return;
     }
     try {
-      const response = await axios.put(`/api/courses/${editingCourse.id}`, { title: editingTitle }, { headers: authService.authHeader() });
+      const response = await apiService.updateCourse(editingCourse.id, editingTitle);
       const updatedCourses = courses.map((course) =>
           course.id === editingCourse.id ? response.data : course
       );
@@ -54,15 +55,17 @@ const CoursesPage = () => {
       setEditingTitle('');
     } catch (error) {
       setError('Error editing course');
+      console.error('Error editing course:', error);
     }
   };
 
   const handleDeleteCourse = async (id) => {
     try {
-      await axios.delete(`/api/courses/${id}`, { headers: authService.authHeader() });
+      await apiService.deleteCourse(id);
       setCourses(courses.filter((course) => course.id !== id));
     } catch (error) {
       setError('Error deleting course');
+      console.error('Error deleting course:', error);
     }
   };
 
@@ -77,7 +80,6 @@ const CoursesPage = () => {
   };
 
   const currentUser = authService.getCurrentUser();
-  console.log('Current user:', currentUser);  // Logowanie aktualnego użytkownika
 
   if (loading) return <p>Loading...</p>;
   if (error) return <p>{error}</p>;
@@ -86,20 +88,17 @@ const CoursesPage = () => {
       <div>
         <h1>Courses</h1>
         <ul>
-          {courses.map((course) => {
-            console.log('Course:', course.title, 'Owner:', course.owner);  // Logowanie kursów i ich właścicieli
-            return (
-                <li key={course.id}>
-                  {course.title}
-                  {course.owner === currentUser?.username && (
-                      <>
-                        <button onClick={() => startEditing(course)}>Edit</button>
-                        <button onClick={() => handleDeleteCourse(course.id)}>Delete</button>
-                      </>
-                  )}
-                </li>
-            );
-          })}
+          {courses.map((course) => (
+              <li key={course.id}>
+                {course.title}
+                {course.owner === currentUser?.username && (
+                    <>
+                      <button onClick={() => startEditing(course)}>Edit</button>
+                      <button onClick={() => handleDeleteCourse(course.id)}>Delete</button>
+                    </>
+                )}
+              </li>
+          ))}
         </ul>
         <div>
           <input
