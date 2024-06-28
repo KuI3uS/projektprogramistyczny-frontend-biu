@@ -5,6 +5,8 @@ import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import ProfilePage from './pages/ProfilePage';
 import CoursesPage from './pages/CoursesPage';
+import ModulesPage from './pages/ModulesPage';
+import QuizzesPage from './pages/QuizzesPage';
 import Navbar from './components/Navbar';
 
 const App = () => {
@@ -18,6 +20,8 @@ const App = () => {
                     <Route path="/register" element={<RegisterPage />} />
                     <Route path="/profile" element={<ProfilePage />} />
                     <Route path="/courses" element={<CoursesPage />} />
+                    <Route path="/modules" element={<ModulesPage />} />
+                    <Route path="/quizzes" element={<QuizzesPage />} />
                 </Routes>
             </div>
         </Router>

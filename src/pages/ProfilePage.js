@@ -1,15 +1,43 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import authService from '../services/authService';
 
 const ProfilePage = () => {
     const currentUser = authService.getCurrentUser();
-    const [username, setUsername] = useState(currentUser.username);
-    const [email, setEmail] = useState(currentUser.email || '');
+    const [username, setUsername] = useState(currentUser?.username || '');
+    const [email, setEmail] = useState(currentUser?.email || '');
     const [profilePicture, setProfilePicture] = useState(null);
+    const [error, setError] = useState(null);
+    const [message, setMessage] = useState(null);
+
+    useEffect(() => {
+        if (currentUser) {
+            setUsername(currentUser.username);
+            setEmail(currentUser.email || '');
+        }
+    }, [currentUser]);
 
     const handleUpdateProfile = async (e) => {
         e.preventDefault();
-        // Logika aktualizacji profilu
+        const formData = new FormData();
+        formData.append('username', username);
+        formData.append('email', email);
+        if (profilePicture) {
+            formData.append('profilePicture', profilePicture);
+        }
+
+        try {
+            const response = await axios.put('/api/profile', formData, {
+                headers: {
+                    ...authService.authHeader(),
+                    'Content-Type': 'multipart/form-data'
+                }
+            });
+            setMessage('Profile updated successfully');
+            authService.setCurrentUser(response.data);
+        } catch (error) {
+            setError('Error updating profile');
+        }
     };
 
     const handleFileChange = (e) => {
@@ -19,6 +47,8 @@ const ProfilePage = () => {
     return (
         <div>
             <h1>Profile Page</h1>
+            {error && <p style={{ color: 'red' }}>{error}</p>}
+            {message && <p style={{ color: 'green' }}>{message}</p>}
             <form onSubmit={handleUpdateProfile}>
                 <div>
                     <label>Username:</label>

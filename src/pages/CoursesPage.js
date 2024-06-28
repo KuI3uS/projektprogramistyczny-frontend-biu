@@ -14,11 +14,9 @@ const CoursesPage = () => {
     const fetchCourses = async () => {
       try {
         const response = await axios.get('/api/courses', { headers: authService.authHeader() });
-        console.log('Fetched courses:', response.data);  // Logowanie kursów
         setCourses(response.data);
       } catch (error) {
         setError('Error fetching courses');
-        console.error('Error fetching courses:', error);
       } finally {
         setLoading(false);
       }
@@ -38,7 +36,6 @@ const CoursesPage = () => {
       setNewCourse('');
     } catch (error) {
       setError('Error adding course');
-      console.error('Error adding course:', error);
     }
   };
 
@@ -57,7 +54,6 @@ const CoursesPage = () => {
       setEditingTitle('');
     } catch (error) {
       setError('Error editing course');
-      console.error('Error editing course:', error);
     }
   };
 
@@ -67,7 +63,6 @@ const CoursesPage = () => {
       setCourses(courses.filter((course) => course.id !== id));
     } catch (error) {
       setError('Error deleting course');
-      console.error('Error deleting course:', error);
     }
   };
 
